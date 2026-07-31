@@ -1,0 +1,14 @@
+# YOLOv8 Segmentation Dataset Configuration for Severstal Steel Defect Detection
+# Note: Class names mapped to anonymous/neutral terms to avoid false semantic assumptions at CV level.
+
+path: ../data/severstal_yolo  # Relative to the training directory execution
+train: images/train
+val: images/val
+
+# Classes
+nc: 4
+names:
+  0: defect_class_1
+  1: defect_class_2
+  2: defect_class_3
+  3: defect_class_4
