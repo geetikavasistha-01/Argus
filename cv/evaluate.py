@@ -34,17 +34,22 @@ def main(weights_path, data_config):
     # Class names map
     class_names = ["defect_class_1", "defect_class_2", "defect_class_3", "defect_class_4"]
     
+    # Get actual class indices evaluated
+    ap_classes = results.ap_class_index.tolist() if hasattr(results, 'ap_class_index') else []
+    
     per_class_metrics = {}
     for i, name in enumerate(class_names):
-        # Extract per-class precision, recall, mAP50 for mask (M)
-        p_c = float(results.seg.p[i]) if hasattr(results, 'seg') and len(results.seg.p) > i else 0.0
-        r_c = float(results.seg.r[i]) if hasattr(results, 'seg') and len(results.seg.r) > i else 0.0
-        
-        if hasattr(results, 'seg') and hasattr(results.seg, 'all_ap') and len(results.seg.all_ap) > i:
-            m_c = float(results.seg.all_ap[i, 0])
+        # i is the class_id (0 to 3)
+        if i in ap_classes:
+            idx = ap_classes.index(i)
+            p_c = float(results.seg.p[idx]) if hasattr(results, 'seg') and len(results.seg.p) > idx else 0.0
+            r_c = float(results.seg.r[idx]) if hasattr(results, 'seg') and len(results.seg.r) > idx else 0.0
+            m_c = float(results.seg.all_ap[idx, 0]) if hasattr(results, 'seg') and hasattr(results.seg, 'all_ap') and len(results.seg.all_ap) > idx else 0.0
         else:
+            p_c = 0.0
+            r_c = 0.0
             m_c = 0.0
-        
+            
         per_class_metrics[name] = {
             "precision": p_c,
             "recall": r_c,
