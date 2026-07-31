@@ -4,7 +4,7 @@ import json
 import torch
 from ultralytics import YOLO
 
-def main(epochs, imgsz, batch, model_size):
+def main(epochs, imgsz, batch, model_size, save_period, patience, fraction):
     # Ensure models directory exists
     os.makedirs("models", exist_ok=True)
     
@@ -24,19 +24,23 @@ def main(epochs, imgsz, batch, model_size):
     
     # Run training
     print(f"Starting fine-tuning on Severstal dataset for {epochs} epochs at resolution {imgsz}...")
+    project_path = os.path.abspath("cv/runs")
     results = model.train(
         data="cv/data_prep/dataset.yaml",
         epochs=epochs,
         imgsz=imgsz,
         batch=batch,
         device=device,
-        project="cv/runs",
+        project=project_path,
         name="severstal_train",
-        exist_ok=True
+        exist_ok=True,
+        save_period=save_period,
+        patience=patience,
+        fraction=fraction
     )
     
     # Save the best model to standard models directory
-    best_weights_src = os.path.join("cv/runs", "severstal_train", "weights", "best.pt")
+    best_weights_src = os.path.join(project_path, "severstal_train", "weights", "best.pt")
     best_weights_dst = os.path.join("models", f"severstal_yolov{model_size}_seg_best.pt")
     
     if os.path.exists(best_weights_src):
@@ -47,7 +51,7 @@ def main(epochs, imgsz, batch, model_size):
         print(f"Warning: Best weights not found at {best_weights_src}")
         
     # Extract training metrics and write to runs directory
-    metrics_path = os.path.join("cv/runs", "train_metrics.json")
+    metrics_path = os.path.join(project_path, "train_metrics.json")
     try:
         metrics = {
             "model_size": model_size,
@@ -73,6 +77,9 @@ if __name__ == "__main__":
     parser.add_argument("--batch", type=int, default=16, help="Batch size")
     parser.add_argument("--model-size", type=str, default="8m", choices=["8n", "8s", "8m", "8l", "8x"], 
                         help="YOLO model size (8n, 8s, 8m, 8l, 8x)")
+    parser.add_argument("--save-period", type=int, default=5, help="Save checkpoint every X epochs")
+    parser.add_argument("--patience", type=int, default=10, help="Early stopping patience epochs")
+    parser.add_argument("--fraction", type=float, default=1.0, help="Fraction of dataset to train on")
     args = parser.parse_args()
     
-    main(args.epochs, args.imgsz, args.batch, args.model_size)
+    main(args.epochs, args.imgsz, args.batch, args.model_size, args.save_period, args.patience, args.fraction)

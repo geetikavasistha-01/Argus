@@ -42,6 +42,9 @@ env/
 cv/runs/
 shared/runs/
 .env
+severstal-steel-defect-detection/
+*.pt
+runs/
 
 # Testing / Coverage
 .pytest_cache/

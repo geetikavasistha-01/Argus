@@ -39,7 +39,11 @@ def main(weights_path, data_config):
         # Extract per-class precision, recall, mAP50 for mask (M)
         p_c = float(results.seg.p[i]) if hasattr(results, 'seg') and len(results.seg.p) > i else 0.0
         r_c = float(results.seg.r[i]) if hasattr(results, 'seg') and len(results.seg.r) > i else 0.0
-        m_c = float(results.seg.map50[i]) if hasattr(results, 'seg') and len(results.seg.map50) > i else 0.0
+        
+        if hasattr(results, 'seg') and hasattr(results.seg, 'all_ap') and len(results.seg.all_ap) > i:
+            m_c = float(results.seg.all_ap[i, 0])
+        else:
+            m_c = 0.0
         
         per_class_metrics[name] = {
             "precision": p_c,

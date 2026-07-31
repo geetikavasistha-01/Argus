@@ -9,7 +9,16 @@ from cv.infer import run_inference
 SAMPLE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "sample_images"))
 BLANK_IMAGE_PATH = os.path.join(SAMPLE_DIR, "blank.jpg")
 DEFECT_IMAGE_PATH = os.path.join(SAMPLE_DIR, "mock_defect.jpg")
-MODEL_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "models", "severstal_yolov8m_seg_best.pt"))
+
+MODELS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "models"))
+MODEL_PATH = None
+for fname in ["severstal_yolov8m_seg_best.pt", "severstal_yolov8s_seg_best.pt", "severstal_yolov8n_seg_best.pt"]:
+    p = os.path.join(MODELS_DIR, fname)
+    if os.path.exists(p):
+        MODEL_PATH = p
+        break
+if MODEL_PATH is None:
+    MODEL_PATH = os.path.join(MODELS_DIR, "severstal_yolov8m_seg_best.pt")
 
 @pytest.fixture(scope="session", autouse=True)
 def setup_sample_images():
