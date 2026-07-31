@@ -1,4 +1,4 @@
-# Argus: Raphson Robotics Pipeline Inspection Copilot
+# Argus: Robotics Pipeline Inspection Copilot
 
 This repository contains the code for the **Argus** agentic pipeline inspection copilot, sold alongside Raphson Robotics' quadruped ("Spider") hardware.
 
