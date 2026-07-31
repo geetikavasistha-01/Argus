@@ -1,0 +1,113 @@
+name: CI Pipeline
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+          cache-dependency-path: '**/requirements.txt'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f cv/requirements.txt ]; then
+            pip install -r cv/requirements.txt
+          else
+            # Fallback if requirements doesn't exist yet (bootstrap phase)
+            pip install ruff pytest pydantic
+          fi
+
+      - name: Run Ruff Lint
+        run: |
+          # Only run if directories exist (handles bootstrap phase)
+          if [ -d cv ] || [ -d shared ]; then
+            ruff check $([ -d cv ] && echo "cv") $([ -d shared ] && echo "shared")
+          else
+            echo "No cv/ or shared/ directory to lint yet."
+          fi
+
+      - name: Run Unit Tests
+        run: |
+          if [ -d cv/tests ]; then
+            pytest cv/tests/ -v
+          else
+            echo "No cv/tests/ directory to test yet."
+          fi
+
+  report-metrics:
+    runs-on: ubuntu-latest
+    needs: lint-and-test
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Check for Eval Report and Comment Metrics
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = 'cv/runs/eval_report.json';
+            
+            if (!fs.existsSync(path)) {
+              console.log('No evaluation report found at ' + path);
+              return;
+            }
+            
+            try {
+              const rawData = fs.readFileSync(path, 'utf8');
+              const report = JSON.parse(rawData);
+              
+              const overall = report.overall || {};
+              const nfr = report.nfr_target_met || {};
+              const perClass = report.per_class || {};
+              
+              let classRows = '';
+              for (const [className, metrics] of Object.entries(perClass)) {
+                classRows += `| **${className}** | ${(metrics.precision * 100).toFixed(2)}% | ${(metrics.recall * 100).toFixed(2)}% | ${(metrics.mAP50 * 100).toFixed(2)}% |\n`;
+              }
+              
+              const commentBody = `### 📊 Argus CV Model Performance Metrics
+              
+              **Overall Metrics:**
+              | Metric | Value | NFR Target Met? |
+              | :--- | :--- | :--- |
+              | **Precision** | ${(overall.precision * 100).toFixed(2)}% | ${nfr.precision_gte_90 ? '✅ Yes (>=90%)' : '❌ No (<90%)'} |
+              | **Recall** | ${(overall.recall * 100).toFixed(2)}% | ${nfr.recall_gte_85 ? '✅ Yes (>=85%)' : '❌ No (<85%)'} |
+              | **mAP50** | ${(overall.mAP50 * 100).toFixed(2)}% | N/A |
+              | **mAP50-95** | ${(overall.mAP50-95 * 100).toFixed(2)}% | N/A |
+              
+              **Per-Class Metrics:**
+              | Class | Precision | Recall | mAP50 |
+              | :--- | :--- | :--- | :--- |
+              ${classRows}
+              
+              *Note: This comment was automatically generated from \`cv/runs/eval_report.json\`.*`;
+              
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: commentBody
+              });
+              console.log('Successfully posted metrics report comment.');
+            } catch (err) {
+              console.error('Failed to parse or post evaluation report:', err);
+            }
