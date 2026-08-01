@@ -9,19 +9,7 @@ The system features:
 4. **React frontend dashboard** ( Pastel sky-blue / sea-green design system matching Stitch finalized layout)
 5. **FastAPI E2E integration**
 
-## Development Setup
 
-### CV Module Setup
-Navigate to the `cv/` directory:
-```bash
-cd cv
-pip install -r requirements.txt
-```
-
-### Run Tests
-```bash
-pytest cv/tests/ -v
-```
 
 ## Branch Mapping and Flow
 All work proceeds sequentially across these branches:
